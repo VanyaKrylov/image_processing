@@ -1,0 +1,61 @@
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+from math import sqrt, floor, exp, pi
+
+
+def distance(x, y, i, j):
+    return sqrt((x - i) ** 2 + (y - j) ** 2)
+
+
+def gaussian(x, sigma):
+    return (1 / (2 * pi * (sigma ** 2))) * exp(- (x ** 2) / (2 * sigma ** 2))
+
+
+def apply_Gauss_filter(source, filtered_image, x, y, diameter, sigma_s):
+    hl = diameter // 2
+    i_filtered = 0
+    Wp = 0
+
+    for i in range(diameter):
+        for j in range(diameter):
+            neighbour_x = x - (hl - i)
+            neighbour_y = y - (hl - j)
+
+            if neighbour_x >= source.shape[0]:
+                neighbour_x -= source.shape[0]
+            if neighbour_y >= source.shape[1]:
+                neighbour_y -= source.shape[1]
+
+            gs = gaussian(distance(neighbour_x, neighbour_y, x, y), sigma_s)
+            i_filtered += source[neighbour_x][neighbour_y] * gs
+            Wp += gs
+
+    i_filtered = i_filtered / Wp
+    filtered_image[x][y] = i_filtered
+
+
+def Gauss_filter(source, filter_diameter, sigma_s):
+    filtered_image = np.zeros(source.shape)
+
+    for i in range(source.shape[0]):
+        for j in range(source.shape[1]):
+            apply_Gauss_filter(source, filtered_image, i, j, filter_diameter, sigma_s)
+
+    return filtered_image
+
+
+if __name__ == "__main__":
+    Sigma = int(input("Ведите значение Sigma: "))
+    img_original = cv2.imread('cat.jpg', 0)  # Открытие входного изображения и преобразование его в оттенки серого
+    noise = np.random.normal(0, 14, img_original.shape)
+    img_changed = (img_original + noise)
+    img_changed /= np.max(img_changed)
+
+    Kernel_size = 4 * Sigma + 1
+    img_new = Gauss_filter(img_changed, Kernel_size, Sigma)
+
+    plt.imshow(img_original)
+    plt.imshow(img_changed)
+    plt.imshow(img_new)
+    plt.show()
